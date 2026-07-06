@@ -257,16 +257,33 @@
       </div>
       <div class="modal-body">
         <div class="settings-input-group">
-          <label for="sheetUrlInput">Google 試算表 連結 或 試算表 ID</label>
+          <label for="sheetUrlInput">🔗 Google 試算表連結 或 試算表 ID</label>
           <input type="text" class="settings-input" id="sheetUrlInput" placeholder="請輸入 Google Sheets 連結...">
+        </div>
+
+        <div class="settings-input-group" style="margin-top: -10px; margin-bottom: 15px;">
+          <label for="sheetNamesInput">📋 欲同步的分頁名稱 (選填，多個以逗號分隔)</label>
+          <input type="text" class="settings-input" id="sheetNamesInput" placeholder="例如：管理組,搜索組,救援組,後勤組,醫療組,備用器材">
           <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
-            您的 Google 試算表必須開啟「知道連結的任何人均可檢視」分享權限。
+            留空代表僅同步第一頁。試算表必須開啟「知道連結的任何人均可檢視」分享權限。
           </p>
         </div>
 
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
           <button class="btn btn-primary btn-large" style="flex: 1;" id="btnStartSync">🔄 下載並同步</button>
           <button class="btn btn-secondary btn-large" id="btnResetLocalData">⚠️ 重置為預設</button>
+        </div>
+
+        <!-- 繞過 CORS 的極速本機導入方式 -->
+        <div class="settings-input-group" style="border-top: 1px solid var(--border-light); padding-top: 15px; margin-top: 15px;">
+          <label>📂 或是直接導入本地 Excel 檔案 (.xlsx)</label>
+          <input type="file" id="excelFileInput" accept=".xlsx" style="display: none;">
+          <button class="btn btn-secondary btn-large" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;" onclick="document.getElementById('excelFileInput').click()">
+            📁 選擇並導入 Excel (.xlsx) 檔案
+          </button>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px; text-align: center;" id="fileUploadName">
+            支援完整多分頁解析 (最推薦，100% 離線免設定)
+          </p>
         </div>
 
         <div class="sync-log" id="syncLog" style="display: none;">
