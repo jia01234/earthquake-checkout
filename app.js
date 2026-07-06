@@ -1,209 +1,181 @@
-// 地震救援裝備借用系統核心邏輯
+// 地震災害救援裝備借用系統 - 主程式邏輯
 
-// 1. 初始化資料載入
-const STORAGE_KEY = 'earthquake_equipment_data';
-const SHEET_SETTING_KEY = 'earthquake_sheet_url_or_id';
-const MAPPINGS_KEY = 'earthquake_custom_mappings';
-const DEFAULT_SHEET_ID = '19bsw5hZYlqhrQmXagK1rr7frNOiqewrBTgJx4JAT2dc';
-
+// 全域狀態
 let equipmentData = [];
-let customMappings = { "監測": [], "骯髒破壞": [], "乾淨切割": [], "支撐": [] };
-let activeCategory = null; // 首頁當前篩選類別
-let activeConfigCat = '監測'; // 設定頁面自訂配置的當前類別
+let customMappings = {
+  "監測": [],
+  "骯髒破壞": [],
+  "乾淨切割": [],
+  "支撐": [],
+  "其他": []
+};
 
-// 初始化
-function init() {
-  // 載入裝備資料
-  const savedData = localStorage.getItem(STORAGE_KEY);
-  if (savedData) {
+// 歷程紀錄狀態
+let transactionLogs = [];
+
+// 篩選與搜尋狀態
+let activeFilterCategory = ""; // 當前篩選的地震工作類別 (監測, 骯髒破壞, 乾淨切割, 支撐, 其他)
+let searchQuery = "";
+let activeConfigCat = "監測"; // 設定面版中當前自訂對應的類別
+
+// 歸還中箱子ID
+let activeReturningBoxId = null;
+
+// 1. 本地儲存讀寫 (LocalStorage)
+function saveToStorage() {
+  localStorage.setItem('earthquake_equipment_data', JSON.stringify(equipmentData));
+}
+
+function loadFromStorage() {
+  const cached = localStorage.getItem('earthquake_equipment_data');
+  if (cached) {
     try {
-      equipmentData = JSON.parse(savedData);
+      equipmentData = JSON.parse(cached);
     } catch (e) {
-      console.error("載入 LocalStorage 失敗，重置為預設資料", e);
-      equipmentData = window.initialEquipmentData || [];
+      console.error("解析本地資料失敗，改用預設資料", e);
+      equipmentData = JSON.parse(JSON.stringify(window.initialEquipmentData));
     }
   } else {
-    equipmentData = window.initialEquipmentData || [];
+    // 首次開啟，載入 data.js 的預設資料
+    equipmentData = JSON.parse(JSON.stringify(window.initialEquipmentData));
     saveToStorage();
   }
 
-  // 載入自訂類別對應 (常用箱子)
-  const savedMappings = localStorage.getItem(MAPPINGS_KEY);
-  if (savedMappings) {
+  // 載入交易日誌
+  const cachedLogs = localStorage.getItem('earthquake_transaction_logs');
+  if (cachedLogs) {
     try {
-      customMappings = JSON.parse(savedMappings);
+      transactionLogs = JSON.parse(cachedLogs);
     } catch (e) {
-      console.error("載入自訂對應失敗，重新生成", e);
-      initializeDefaultMappings();
+      console.error(e);
+      transactionLogs = [];
+    }
+  }
+}
+
+// 2. 自訂任務推薦清單配置讀寫
+function saveMappings() {
+  localStorage.setItem('earthquake_custom_mappings', JSON.stringify(customMappings));
+}
+
+function loadMappings() {
+  const cached = localStorage.getItem('earthquake_custom_mappings');
+  if (cached) {
+    try {
+      customMappings = JSON.parse(cached);
+    } catch (e) {
+      console.error(e);
     }
   } else {
-    initializeDefaultMappings();
-  }
-
-  // 載入 Google 試算表設定
-  const savedSheetSetting = localStorage.getItem(SHEET_SETTING_KEY);
-  const sheetInput = document.getElementById('sheetUrlInput');
-  if (sheetInput) {
-    sheetInput.value = savedSheetSetting || DEFAULT_SHEET_ID;
-  }
-
-  // 註冊 Event Listeners
-  setupEventListeners();
-
-  // 更新統計、配置面板與首頁渲染
-  updateStats();
-  renderConfigGrid();
-  renderEquipment();
-}
-
-// 根據目前裝備箱內容自動初始化自訂推薦對應
-function initializeDefaultMappings() {
-  customMappings = { "監測": [], "骯髒破壞": [], "乾淨切割": [], "支撐": [] };
-  equipmentData.forEach(box => {
-    // 依據原始分類推導預設推薦
-    box.categories.forEach(cat => {
-      if (customMappings[cat]) {
-        customMappings[cat].push(box.boxId);
-      }
-    });
-  });
-  saveMappings();
-}
-
-// 儲存資料到 LocalStorage
-function saveToStorage() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(equipmentData));
-}
-
-function saveMappings() {
-  localStorage.setItem(MAPPINGS_KEY, JSON.stringify(customMappings));
-}
-
-// 2. 註冊事件監聽
-function setupEventListeners() {
-  // 模糊搜尋輸入監聽
-  const searchInput = document.getElementById('searchInput');
-  searchInput.addEventListener('input', () => {
-    renderEquipment();
-  });
-
-  // 首頁任務篩選按鈕監聽
-  const filterBtns = document.querySelectorAll('.rec-buttons .btn-filter');
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const category = btn.getAttribute('data-category');
-      
-      if (btn.id === 'btnResetFilters') {
-        activeCategory = null;
-        filterBtns.forEach(b => b.classList.remove('active'));
-      } else {
-        activeCategory = category;
-        filterBtns.forEach(b => {
-          if (b.getAttribute('data-category') === category) {
-            b.classList.add('active');
-          } else {
-            b.classList.remove('active');
-          }
-        });
-      }
-      renderEquipment();
-    });
-  });
-
-  // 設定視窗開關
-  const settingsModal = document.getElementById('settingsModal');
-  document.getElementById('btnOpenSettings').addEventListener('click', () => {
-    renderConfigGrid(); // 開啟時重新整理配置核取方塊
-    settingsModal.classList.add('active');
-  });
-  document.getElementById('btnCloseSettings').addEventListener('click', () => {
-    settingsModal.classList.remove('active');
-    document.getElementById('syncLog').style.display = 'none';
-  });
-
-  // 設定視窗內的任務類別 Tab 切換
-  const configTabs = [
-    { id: 'configTab_監測', cat: '監測' },
-    { id: 'configTab_骯髒破壞', cat: '骯髒破壞' },
-    { id: 'configTab_乾淨切割', cat: '乾淨切割' },
-    { id: 'configTab_支撐', cat: '支撐' }
-  ];
-  configTabs.forEach(tab => {
-    const el = document.getElementById(tab.id);
-    if (el) {
-      el.addEventListener('click', () => {
-        activeConfigCat = tab.cat;
-        configTabs.forEach(t => {
-          const btn = document.getElementById(t.id);
-          if (t.cat === tab.cat) {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
-        });
-        renderConfigGrid();
+    // 預設配置：自動根據分類對應
+    equipmentData.forEach(box => {
+      box.categories.forEach(cat => {
+        if (customMappings[cat] && !customMappings[cat].includes(box.boxId)) {
+          customMappings[cat].push(box.boxId);
+        }
       });
-    }
-  });
+    });
+    saveMappings();
+  }
+}
 
-  // 詳情視窗關閉
-  const detailModal = document.getElementById('detailModal');
-  document.getElementById('btnCloseDetail').addEventListener('click', () => {
-    detailModal.classList.remove('active');
-  });
+// 3. 新增歷程紀錄
+function addTransactionLog(action, boxId, team, details = "") {
+  const now = new Date();
+  const timeStr = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  
+  const logEntry = {
+    timestamp: timeStr,
+    action: action, // "borrow_a", "borrow_b", "return"
+    boxId: boxId,
+    team: team, // "A組", "B組", "--"
+    details: details
+  };
 
-  // 團隊借用明細視窗開關
-  const teamModal = document.getElementById('teamModal');
-  document.getElementById('statCardTa').addEventListener('click', () => {
-    openTeamModal('A組');
-  });
-  document.getElementById('statCardTb').addEventListener('click', () => {
-    openTeamModal('B組');
-  });
-  document.getElementById('btnCloseTeamModal').addEventListener('click', () => {
-    teamModal.classList.remove('active');
-  });
+  transactionLogs.unshift(logEntry); // 最新的排在最前面
+  if (transactionLogs.length > 1000) {
+    transactionLogs.pop(); // 上限 1000 筆
+  }
 
-  // 點擊 Modal 外部可關閉
-  window.addEventListener('click', (e) => {
-    if (e.target === settingsModal) {
-      settingsModal.classList.remove('active');
-      document.getElementById('syncLog').style.display = 'none';
-    }
-    if (e.target === detailModal) {
-      detailModal.classList.remove('active');
-    }
-    if (e.target === teamModal) {
-      teamModal.classList.remove('active');
-    }
-  });
+  localStorage.setItem('earthquake_transaction_logs', JSON.stringify(transactionLogs));
+  renderLogs();
+}
 
-  // 開始同步按鈕
-  document.getElementById('btnStartSync').addEventListener('click', () => {
-    const sheetInput = document.getElementById('sheetUrlInput').value.trim();
-    if (!sheetInput) {
-      showToast('⚠️ 請輸入試算表 ID 或網址');
-      return;
-    }
-    localStorage.setItem(SHEET_SETTING_KEY, sheetInput);
-    syncFromGoogleSheets(sheetInput);
-  });
+// 渲染歷程紀錄 Modal 內容
+function renderLogs() {
+  const container = document.getElementById('logListContainer');
+  container.innerHTML = '';
 
-  // 重置資料按鈕
-  document.getElementById('btnResetLocalData').addEventListener('click', () => {
-    if (confirm('確定要將裝備與自訂分類重置為預設嗎？這將會清除目前所有的借用狀態。')) {
-      equipmentData = window.initialEquipmentData || [];
-      saveToStorage();
-      initializeDefaultMappings();
-      updateStats();
-      renderEquipment();
-      showToast('🔄 已重置為預設資料');
-      settingsModal.classList.remove('active');
+  if (transactionLogs.length === 0) {
+    container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-secondary);">目前尚無任何借還歷史紀錄。</div>';
+    return;
+  }
+
+  transactionLogs.forEach(log => {
+    const item = document.createElement('div');
+    item.className = 'log-item';
+
+    let descClass = 'log-desc';
+    let actionText = '';
+    if (log.action === 'borrow_a') {
+      descClass += ' borrow';
+      actionText = `🔵 A組 借出 【${log.boxId}】`;
+    } else if (log.action === 'borrow_b') {
+      descClass += ' borrow';
+      actionText = `🔴 B組 借出 【${log.boxId}】`;
+    } else {
+      descClass += log.details.includes('⚠️') ? ' issue' : ' return';
+      actionText = `🟢 ${log.team ? log.team + ' ' : ''}歸還 【${log.boxId}】`;
     }
+
+    item.innerHTML = `
+      <div class="log-time">${log.timestamp}</div>
+      <div class="${descClass}">${actionText} ${log.details ? `<span style="font-size: 0.85rem; opacity: 0.9;"><br>➔ ${log.details}</span>` : ''}</div>
+    `;
+    container.appendChild(item);
   });
 }
 
-// 3. 戰情統計數據更新
+// 匯出歷程紀錄 CSV
+function exportLogsToCSV() {
+  if (transactionLogs.length === 0) {
+    showToast("❌ 沒有可匯出的紀錄！");
+    return;
+  }
+
+  let csvContent = "\uFEFF時間,動作,箱號,組別,詳細說明\n";
+  transactionLogs.forEach(log => {
+    let actionStr = "";
+    if (log.action === 'borrow_a') actionStr = "借出";
+    else if (log.action === 'borrow_b') actionStr = "借出";
+    else actionStr = "歸還";
+
+    const detailsEscaped = log.details.replace(/"/g, '""');
+    csvContent += `"${log.timestamp}","${actionStr}","${log.boxId}","${log.team}","${detailsEscaped}"\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `地震救援裝備借還歷程_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("📤 歷程 CSV 檔匯出成功！");
+}
+
+// 清除歷程紀錄
+function clearLogs() {
+  if (confirm("⚠️ 確定要清除所有借還歷程紀錄嗎？此動作無法復原。")) {
+    transactionLogs = [];
+    localStorage.removeItem('earthquake_transaction_logs');
+    renderLogs();
+    showToast("🗑️ 歷程紀錄已全數清空");
+  }
+}
+
+// 4. 戰情統計卡片數據更新
 function updateStats() {
   const total = equipmentData.length;
   const avail = equipmentData.filter(b => b.status === 'available').length;
@@ -216,113 +188,140 @@ function updateStats() {
   document.getElementById('statTbBoxes').innerText = tb;
 }
 
-// 4. 裝備看板渲染 (支援搜尋與自訂任務推薦篩選)
+// 5. 渲染首頁主裝備卡片區
 function renderEquipment() {
   const grid = document.getElementById('equipmentGrid');
   grid.innerHTML = '';
 
-  const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+  // 1. 取得需要篩選的推薦箱子名單
+  let recommendedBoxIds = null;
+  if (activeFilterCategory) {
+    recommendedBoxIds = customMappings[activeFilterCategory] || [];
+  }
 
-  // 篩選邏輯
-  const filteredData = equipmentData.filter(box => {
-    // A. 自訂任務推薦篩選
-    if (activeCategory) {
-      const matchCat = customMappings[activeCategory] && customMappings[activeCategory].includes(box.boxId);
-      if (!matchCat) return false;
+  // 2. 進行模糊搜尋與篩選過濾
+  const filtered = equipmentData.filter(box => {
+    // 類別過濾 (自訂推薦清單篩選)
+    if (recommendedBoxIds !== null) {
+      if (!recommendedBoxIds.includes(box.boxId)) return false;
     }
 
-    // B. 模糊搜尋篩選
+    // 關鍵字搜尋 (模糊搜尋箱號、組別、存放位置或箱內所有裝備的品名/規格)
     if (searchQuery) {
-      const matchBoxId = box.boxId.toLowerCase().includes(searchQuery);
-      const matchGroup = box.group.toLowerCase().includes(searchQuery);
-      const matchLocation = box.location.toLowerCase().includes(searchQuery);
-      const matchItems = box.items.some(item => 
-        item.name.toLowerCase().includes(searchQuery) || 
-        item.spec.toLowerCase().includes(searchQuery) ||
-        item.power.toLowerCase().includes(searchQuery)
-      );
+      const q = searchQuery.toLowerCase();
+      const matchBoxId = box.boxId.toLowerCase().includes(q);
+      const matchGroup = box.group.toLowerCase().includes(q);
+      const matchLoc = (box.location || "").toLowerCase().includes(q);
       
-      return matchBoxId || matchGroup || matchLocation || matchItems;
+      const matchItems = box.items.some(item => 
+        item.name.toLowerCase().includes(q) || 
+        (item.spec && item.spec.toLowerCase().includes(q))
+      );
+
+      return matchBoxId || matchGroup || matchLoc || matchItems;
     }
 
     return true;
   });
 
-  if (filteredData.length === 0) {
+  if (filtered.length === 0) {
     grid.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-secondary);">
-        <h3>🔍 找不到符合的裝備箱</h3>
-        <p style="margin-top: 10px;">請嘗試更換搜尋關鍵字，或清除分類篩選</p>
+      <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+        <p style="font-size: 1.2rem; margin-bottom: 8px;">🔍 沒有找到符合條件的裝備箱</p>
+        <p style="font-size: 0.9rem;">試試更換搜尋關鍵字，或清除上方的救援工作篩選按鈕。</p>
       </div>
     `;
     return;
   }
 
-  // 生成卡片 HTML
-  filteredData.forEach(box => {
+  filtered.forEach(box => {
     const card = document.createElement('div');
-    card.className = `box-card ${box.status}`;
     
-    if (activeCategory) {
-      card.classList.add('highlighted');
+    // 如果有異常回報，加入 has-issue 樣式
+    const hasIssue = box.hasDamageOrMissing === true;
+    card.className = `box-card ${box.status} ${hasIssue ? 'has-issue' : ''}`;
+    
+    // 計算箱子主狀態文字與類別徽章
+    let statusBadge = '';
+    let actionButtons = '';
+    
+    if (box.status === 'available') {
+      statusBadge = '<span class="status-badge available">🟢 在庫</span>';
+      actionButtons = `
+        <button class="btn btn-borrow btn-borrow-ta" onclick="event.stopPropagation(); borrowBox('${box.boxId}', 'A組')">借出 A組</button>
+        <button class="btn btn-borrow btn-borrow-tb" onclick="event.stopPropagation(); borrowBox('${box.boxId}', 'B組')">借出 B組</button>
+      `;
+    } else {
+      const isTeamA = box.status === 'teamA';
+      const teamText = isTeamA ? '🔵 A組借用' : '🔴 B組借用';
+      const teamClass = isTeamA ? 'teama' : 'teamb';
+      
+      statusBadge = `<span class="status-badge ${teamClass}">${teamText}</span>`;
+      actionButtons = `
+        <button class="btn btn-return" onclick="event.stopPropagation(); openReturnModal('${box.boxId}')">🟢 歸還登記</button>
+      `;
     }
 
-    // 狀態文字與圖示
-    let statusText = '🟢 在庫';
-    if (box.status === 'teamA') statusText = '🔵 A組借用中';
-    if (box.status === 'teamB') statusText = '🔴 B組借用中';
+    // 器材缺失標籤
+    let issueTag = '';
+    if (hasIssue) {
+      issueTag = `
+        <div class="issue-indicator" title="缺失明細">
+          ⚠️ 缺漏/損壞
+        </div>
+      `;
+    }
 
-    // 取得箱子內前 3 項器材清單作為預覽
+    // 箱內裝備項目預覽 (最多顯示 3 樣，其餘以 ... 替代)
     const previewItems = box.items.slice(0, 3);
-    let itemsHtml = previewItems.map(item => `
-      <li>
-        <span class="name">${item.name}</span>
-        <span class="qty">${item.qty}</span>
-      </li>
+    let previewHtml = previewItems.map(item => `
+      <div class="item-preview-row">
+        <span class="preview-name">${item.name}</span>
+        <span class="preview-qty">${item.qty}</span>
+      </div>
     `).join('');
-
+    
     if (box.items.length > 3) {
-      itemsHtml += `<div class="more-items-count">+ 還有 ${box.items.length - 3} 項器材明細...</div>`;
+      previewHtml += `
+        <div style="font-size: 0.8rem; color: var(--text-secondary); text-align: center; margin-top: 4px;">
+          ... 及其他 ${box.items.length - 3} 項器材
+        </div>
+      `;
     }
 
-    // 取得自訂該箱目前所屬的標籤陣列
-    const currentCats = [];
-    for (const [cat, list] of Object.entries(customMappings)) {
-      if (list.includes(box.boxId)) {
-        currentCats.push(cat);
-      }
-    }
-    const tagsHtml = currentCats.length > 0 
-      ? currentCats.map(cat => `<span class="category-tag">${cat}</span>`).join('')
-      : '<span class="category-tag" style="background: rgba(255,255,255,0.05); color: var(--text-secondary);">無標籤</span>';
-
-    // 卡片主體結構
     card.innerHTML = `
-      <div class="card-header">
+      <div onclick="openDetailModal('${box.boxId}')" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;">
         <div>
-          <div class="box-id">${box.boxId}</div>
-          <div class="group-badge">${box.group}</div>
+          <!-- 卡片頂部狀態與缺失 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            ${statusBadge}
+            ${issueTag}
+          </div>
+          
+          <!-- 箱號與存放位置 -->
+          <h3 class="box-title">${box.boxId}</h3>
+          <div class="box-meta-row">
+            <span>分組: ${box.group}</span>
+            <span>📍 ${box.location || '未標註'}</span>
+          </div>
+
+          <!-- 借出資訊 -->
+          ${box.borrowedBy ? `
+            <div style="font-size: 0.8rem; background: rgba(255,255,255,0.04); border-radius: 6px; padding: 6px 8px; margin: 8px 0; border-left: 3px solid ${box.status === 'teamA' ? 'var(--status-teama)' : 'var(--status-teamb)'};">
+              👤 ${box.borrowedBy} • 🕒 ${box.borrowedTime}
+            </div>
+          ` : ''}
+
+          <!-- 裝備預覽區 -->
+          <div class="box-preview-container">
+            ${previewHtml}
+          </div>
         </div>
-        <div class="status-indicator">
-          <span class="status-dot"></span>
-          <span>${statusText}</span>
+
+        <!-- 底部大觸控借還鍵 -->
+        <div class="box-actions-grid" style="margin-top: 15px;">
+          ${actionButtons}
         </div>
-      </div>
-      <div class="card-body" onclick="openDetailModal('${box.boxId}')">
-        <div class="category-tags">${tagsHtml}</div>
-        <ul class="item-summary-list">
-          ${itemsHtml}
-        </ul>
-        <div class="box-location">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-            <circle cx="12" cy="10" r="3"/>
-          </svg>
-          位置: ${box.location || '未標註'}
-        </div>
-      </div>
-      <div class="card-actions">
-        ${getCardActionsHtml(box)}
       </div>
     `;
 
@@ -330,59 +329,151 @@ function renderEquipment() {
   });
 }
 
-// 根據箱子狀態動態生成卡片底部的操作按鈕
-function getCardActionsHtml(box) {
-  if (box.status === 'available') {
-    return `
-      <div class="card-actions-row">
-        <button class="btn btn-borrow-ta" onclick="borrowBox('${box.boxId}', 'teamA')">🔵 A組借用</button>
-        <button class="btn btn-borrow-tb" onclick="borrowBox('${box.boxId}', 'teamB')">🔴 B組借用</button>
-      </div>
-    `;
-  } else {
-    const teamLabel = box.status === 'teamA' ? 'A組' : 'B組';
-    const timeStr = box.borrowedTime ? `<div style="font-size: 0.75rem; text-align: center; color: var(--text-secondary); margin-bottom: 4px;">借出時間: ${box.borrowedTime}</div>` : '';
-    return `
-      ${timeStr}
-      <button class="btn btn-return" onclick="returnBox('${box.boxId}')">🟢 歸還在庫</button>
-    `;
-  }
-}
-
-// 6. 借用與歸還操作
-function borrowBox(boxId, team) {
+// 6. 租借操作
+function borrowBox(boxId, teamName) {
   const box = equipmentData.find(b => b.boxId === boxId);
   if (!box) return;
 
   const now = new Date();
-  const timeString = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const teamLabel = team === 'teamA' ? 'A組' : 'B組';
+  const timeStr = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-  box.status = team;
-  box.borrowedBy = teamLabel;
-  box.borrowedTime = timeString;
+  box.status = teamName === 'A組' ? 'teamA' : 'teamB';
+  box.borrowedBy = teamName;
+  box.borrowedTime = timeStr;
 
   saveToStorage();
   updateStats();
   renderEquipment();
-  showToast(`🔵 已成功借出【${boxId}】給 ${teamLabel}`);
+  
+  // 記錄日誌
+  addTransactionLog(teamName === 'A組' ? 'borrow_a' : 'borrow_b', boxId, teamName);
+  
+  showToast(`🔵 【${boxId}】已成功借出給【${teamName}】`);
 }
 
-function returnBox(boxId) {
+// 7. 開啟歸還確認 Modal (包含損壞/缺漏勾選)
+function openReturnModal(boxId) {
   const box = equipmentData.find(b => b.boxId === boxId);
   if (!box) return;
 
+  activeReturningBoxId = boxId;
+  document.getElementById('returnModalTitle').innerText = `確認歸還裝備箱：${boxId}`;
+  
+  const tbody = document.getElementById('returnModalItemTableBody');
+  tbody.innerHTML = '';
+
+  // 動態建立清單項目，附帶加減數量與損壞複選框
+  box.items.forEach((item, index) => {
+    // 解析原本的數值，預設為沒有缺失 (0)
+    const totalQty = parseInt(item.qty) || 1;
+    const isDamaged = false;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="item-row-name">${item.name}</td>
+      <td style="text-align: center; font-weight: 700;">${item.qty}</td>
+      <td style="text-align: center;">
+        <div class="return-qty-control" style="justify-content: center;">
+          <button class="btn-qty" onclick="changeMissingQty(${index}, -1, ${totalQty})">-</button>
+          <span class="qty-val" id="missingVal_${index}" data-max="${totalQty}">0</span>
+          <button class="btn-qty" onclick="changeMissingQty(${index}, 1, ${totalQty})">+</button>
+        </div>
+      </td>
+      <td style="text-align: center;">
+        <input type="checkbox" class="damage-checkbox" id="damageCheck_${index}">
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('returnModal').classList.add('active');
+}
+
+// 調整缺失數量，不可超過原本總數，也不可小於 0
+function changeMissingQty(index, delta, max) {
+  const el = document.getElementById(`missingVal_${index}`);
+  let val = parseInt(el.innerText) + delta;
+  if (val < 0) val = 0;
+  if (val > max) val = max;
+  el.innerText = val;
+  
+  // 如果有缺失，文字加亮警告色
+  if (val > 0) {
+    el.classList.add('warning');
+  } else {
+    el.classList.remove('warning');
+  }
+}
+
+// 點選確認歸還，處理並記錄損壞與缺少明細
+function confirmReturn() {
+  if (!activeReturningBoxId) return;
+
+  const box = equipmentData.find(b => b.boxId === activeReturningBoxId);
+  if (!box) return;
+
+  const formerTeam = box.borrowedBy; // 原本借用的組別
+
+  // 解析使用者在畫面上輸入的缺漏與損壞狀態
+  const anomalyItems = [];
+  box.items.forEach((item, index) => {
+    const missingCount = parseInt(document.getElementById(`missingVal_${index}`).innerText) || 0;
+    const isDamaged = document.getElementById(`damageCheck_${index}`).checked;
+
+    if (missingCount > 0 || isDamaged) {
+      anomalyItems.push({
+        name: item.name,
+        missing: missingCount,
+        damaged: isDamaged,
+        origQty: item.qty
+      });
+    }
+  });
+
+  // 更新箱子狀態
   box.status = 'available';
   box.borrowedBy = '';
   box.borrowedTime = '';
 
+  let logDetails = "";
+  if (anomalyItems.length > 0) {
+    box.hasDamageOrMissing = true;
+    box.damagedItems = anomalyItems;
+    
+    // 串接詳細日誌字串
+    const summary = anomalyItems.map(a => {
+      let str = a.name;
+      if (a.missing > 0) str += `(缺 ${a.missing})`;
+      if (a.damaged) str += `(損壞)`;
+      return str;
+    }).join(', ');
+    
+    logDetails = `⚠️ 歸還異常：${summary}`;
+  } else {
+    box.hasDamageOrMissing = false;
+    box.damagedItems = [];
+    logDetails = "正常歸還";
+  }
+
   saveToStorage();
   updateStats();
   renderEquipment();
-  showToast(`🟢 已成功歸還【${boxId}】`);
+  
+  // 記錄日誌
+  addTransactionLog("return", activeReturningBoxId, formerTeam, logDetails);
+
+  document.getElementById('returnModal').classList.remove('active');
+  
+  if (box.hasDamageOrMissing) {
+    showToast(`⚠️ 【${activeReturningBoxId}】已歸還，但有缺失回報！`);
+  } else {
+    showToast(`🟢 已成功歸還【${activeReturningBoxId}】`);
+  }
+  
+  activeReturningBoxId = null;
 }
 
-// 7. 裝備單箱詳情 Modal
+// 8. 裝備單箱詳情 Modal (支援顯示缺失詳情)
 function openDetailModal(boxId) {
   const box = equipmentData.find(b => b.boxId === boxId);
   if (!box) return;
@@ -393,6 +484,26 @@ function openDetailModal(boxId) {
 
   const tbody = document.getElementById('modalItemTableBody');
   tbody.innerHTML = '';
+
+  // 如果這箱有缺失紀錄，在最上方插入醒目黃色標示
+  if (box.hasDamageOrMissing && box.damagedItems && box.damagedItems.length > 0) {
+    const trWarn = document.createElement('tr');
+    trWarn.style.background = 'rgba(245, 158, 11, 0.1)';
+    
+    const summaryList = box.damagedItems.map(a => {
+      let parts = [];
+      if (a.missing > 0) parts.push(`缺失數量: ${a.missing}/${a.origQty}`);
+      if (a.damaged) parts.push("硬體受損/故障");
+      return `【${a.name}】(${parts.join(', ')})`;
+    }).join('、');
+
+    trWarn.innerHTML = `
+      <td colspan="5" style="color: #fbbf24; font-weight: 700; padding: 12px; border-bottom: 2px solid rgba(245, 158, 11, 0.3);">
+        ⚠️ 本箱目前存在以下異常回報：<br>${summaryList}
+      </td>
+    `;
+    tbody.appendChild(trWarn);
+  }
 
   box.items.forEach(item => {
     const tr = document.createElement('tr');
@@ -415,7 +526,7 @@ function openDetailModal(boxId) {
   document.getElementById('detailModal').classList.add('active');
 }
 
-// 8. A組/B組目前借用總明細 Modal
+// 9. A組/B組目前借用總明細 Modal
 function openTeamModal(teamName) {
   const teamStatus = teamName === 'A組' ? 'teamA' : 'teamB';
   const borrowedBoxes = equipmentData.filter(b => b.status === teamStatus);
@@ -459,7 +570,7 @@ function openTeamModal(teamName) {
   document.getElementById('teamModal').classList.add('active');
 }
 
-// 9. 自訂任務推薦箱子配置渲染與切換
+// 10. 自訂任務推薦箱子配置渲染與切換
 function renderConfigGrid() {
   const grid = document.getElementById('configBoxGrid');
   grid.innerHTML = '';
@@ -486,7 +597,7 @@ function renderConfigGrid() {
     `;
     
     label.innerHTML = `
-      <input type="checkbox" style="accent-color: var(--accent);" ${isChecked ? 'checked' : ''} onchange="toggleBoxMapping('${boxId}', this.checked, this)">
+      <input type="checkbox" style="accent-color: var(--accent)" ${isChecked ? 'checked' : ''} onchange="toggleBoxMapping('${boxId}', this.checked, this)">
       <span style="color: ${isChecked ? '#fff' : 'var(--text-secondary)'}; font-weight: ${isChecked ? '700' : 'normal'}">${boxId}</span>
     `;
     
@@ -494,7 +605,6 @@ function renderConfigGrid() {
   });
 }
 
-// 切換自訂箱子勾選狀態
 function toggleBoxMapping(boxId, isChecked, checkboxEl) {
   if (!customMappings[activeConfigCat]) {
     customMappings[activeConfigCat] = [];
@@ -511,10 +621,8 @@ function toggleBoxMapping(boxId, isChecked, checkboxEl) {
     }
   }
 
-  // 立即保存配置
   saveMappings();
   
-  // 動態更新當前核取方塊的 label 樣式
   const label = checkboxEl.parentElement;
   if (isChecked) {
     label.style.background = 'rgba(99, 102, 241, 0.15)';
@@ -528,17 +636,16 @@ function toggleBoxMapping(boxId, isChecked, checkboxEl) {
     label.querySelector('span').style.fontWeight = 'normal';
   }
 
-  // 首頁卡片即時重繪 (分類標籤、篩選都會跟著變)
   renderEquipment();
 }
 
-// 10. 雲端同步邏輯：從 Google 試算表同步資料
+// 11. 雲端同步邏輯：從 Google 試算表 (支援 Excel .xlsx 格式全分頁下載)
 async function syncFromGoogleSheets(input) {
   const logDiv = document.getElementById('syncLog');
   logDiv.style.display = 'block';
-  logDiv.innerHTML = '正在分析試算表連結...<br>';
+  logDiv.innerHTML = '正在分析試算表網址...<br>';
 
-  // 擷取 Spreadsheet ID
+  // 1. 擷取 Spreadsheet ID
   let sheetId = input.trim();
   if (sheetId.includes('docs.google.com/spreadsheets')) {
     const matches = sheetId.match(/\/d\/([a-zA-Z0-9-_]+)/);
@@ -550,22 +657,258 @@ async function syncFromGoogleSheets(input) {
     }
   }
 
-  const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
-  logDiv.innerHTML += `準備下載 CSV...<br>`;
+  // 2. 構建 Excel (.xlsx) 匯出網址，可一次下載所有分頁
+  const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`;
+  logDiv.innerHTML += `準備下載 Excel 資料包...<br>`;
 
   try {
     const response = await fetch(exportUrl);
     if (!response.ok) {
-      throw new Error(`HTTP 錯誤狀態: ${response.status}。請確認試算表已開啟「知道連結的任何人均可檢視」分享權限。`);
+      throw new Error(`HTTP 錯誤狀態: ${response.status}。請確認您的試算表已開啟「知道連結的任何人均可檢視」分享權限。`);
     }
 
-    const csvText = await response.text();
-    logDiv.innerHTML += `下載成功，解析中...<br>`;
+    const arrayBuffer = await response.arrayBuffer();
+    logDiv.innerHTML += `下載成功！開始解析多個分頁...<br>`;
 
-    const parsedRows = parseCSV(csvText);
-    logDiv.innerHTML += `共解析到 ${parsedRows.length} 列資料。<br>`;
+    // 使用本地 SheetJS 解析 Excel
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
 
-    processSyncedCSV(parsedRows, logDiv);
+    let allEqRows = [];
+    logDiv.innerHTML += `共發現 ${workbook.SheetNames.length} 個分頁。<br>`;
+
+    // 遍歷所有分頁進行動態標頭匹配與解析
+    workbook.SheetNames.forEach(sheetName => {
+      const worksheet = workbook.Sheets[sheetName];
+      const parsedRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      if (parsedRows.length === 0) return;
+
+      // 尋找表頭列，藉此動態判斷欄位索引 (防止使用者新增/移動欄位)
+      let headerRow = null;
+      let headerRowIndex = -1;
+
+      for (let i = 0; i < parsedRows.length; i++) {
+        const r = parsedRows[i];
+        if (!r || r.length < 2) continue;
+        const rowStr = r.map(c => c ? c.toString().trim() : "").join("|");
+        
+        if (rowStr.includes("組別") && (rowStr.includes("團體裝備") || rowStr.includes("品名"))) {
+          headerRow = r.map(c => c ? c.toString().trim() : "");
+          headerRowIndex = i;
+          break;
+        }
+      }
+
+      if (!headerRow) {
+        logDiv.innerHTML += `<span style="color: #f59e0b;">⚠️ 忽略分頁【${sheetName}】: 未找到「組別」與「團體裝備/品名」表頭</span><br>`;
+        return;
+      }
+
+      // 動態匹配關鍵字對應的索引值
+      let colGroupIdx = headerRow.findIndex(c => c.includes("組別"));
+      let colNameIdx = headerRow.findIndex(c => c.includes("團體裝備") || c.includes("品名") || c.includes("品項"));
+      let colQtyIdx = headerRow.findIndex(c => c.includes("數量"));
+      let colBoxIdx = headerRow.findIndex(c => c.includes("箱號") || c.includes("箱子"));
+      let colSpecIdx = headerRow.findIndex(c => c.includes("規格") || c.includes("序號"));
+      let colPowerIdx = headerRow.findIndex(c => c.includes("動力"));
+      let colConsumableIdx = headerRow.findIndex(c => c.includes("耗材"));
+      let colWeightIdx = headerRow.findIndex(c => c.includes("重量"));
+      let colLocationIdx = headerRow.findIndex(c => c.includes("位置") || c.includes("存放"));
+
+      // 容錯機制 (當某些選填欄位未配對到時，使用預設舊版欄位順序)
+      if (colGroupIdx === -1) colGroupIdx = 0;
+      if (colNameIdx === -1) colNameIdx = 1;
+      if (colQtyIdx === -1) colQtyIdx = 2;
+      if (colBoxIdx === -1) colBoxIdx = 7;
+      if (colSpecIdx === -1) colSpecIdx = 4;
+      if (colPowerIdx === -1) colPowerIdx = 5;
+      if (colConsumableIdx === -1) colConsumableIdx = 6;
+      if (colWeightIdx === -1) colWeightIdx = 9;
+      if (colLocationIdx === -1) colLocationIdx = 11;
+
+      // 擷取裝備列 (直到遇到 "序號", "合計" 或 "1"加"箱" 斷點為止)
+      let sheetCount = 0;
+      for (let i = headerRowIndex + 1; i < parsedRows.length; i++) {
+        const r = parsedRows[i];
+        if (!r || r.length === 0) continue;
+
+        const c0 = r[colGroupIdx] ? r[colGroupIdx].toString().trim() : "";
+        const c1 = r[colNameIdx] ? r[colNameIdx].toString().trim() : "";
+
+        // 偵測數據表終止行
+        if (c0 === "序號" || c0.includes("合計") || (c0 === "1" && c1.includes("箱"))) {
+          break;
+        }
+
+        allEqRows.push({
+          row: r,
+          sheetName,
+          colGroupIdx, colNameIdx, colQtyIdx, colBoxIdx, colSpecIdx, colPowerIdx, colConsumableIdx, colWeightIdx, colLocationIdx
+        });
+        sheetCount++;
+      }
+      logDiv.innerHTML += `已載入分頁【${sheetName}】共 ${sheetCount} 條裝備。<br>`;
+    });
+
+    if (allEqRows.length === 0) {
+      throw new Error("找不到任何有效的裝備明細資料列！請確認格式是否符合規格。");
+    }
+
+    logDiv.innerHTML += `全部總計抓取到 ${allEqRows.length} 筆明細。開始進行合併與分組...<br>`;
+
+    // 暫存現有的借用與異常狀態，避免覆蓋
+    const oldStatusMap = {};
+    equipmentData.forEach(b => {
+      oldStatusMap[b.boxId] = {
+        status: b.status,
+        borrowedBy: b.borrowedBy,
+        borrowedTime: b.borrowedTime,
+        hasDamageOrMissing: b.hasDamageOrMissing,
+        damagedItems: b.damagedItems
+      };
+    });
+
+    // 進行分箱分組
+    const tempBoxes = {};
+    let currentGroup = "未分類";
+    let lastBox = "";
+
+    allEqRows.forEach(({ row: r, colGroupIdx, colNameIdx, colQtyIdx, colBoxIdx, colSpecIdx, colPowerIdx, colConsumableIdx, colWeightIdx, colLocationIdx }) => {
+      const groupVal = r[colGroupIdx] ? r[colGroupIdx].toString().trim().replace(/\n/g, '') : '';
+      if (groupVal) {
+        currentGroup = groupVal;
+        lastBox = ""; // 更換組別時重置
+      }
+
+      const itemName = r[colNameIdx] ? r[colNameIdx].toString().trim() : '';
+      if (!itemName) return;
+
+      const qty = r[colQtyIdx] ? r[colQtyIdx].toString().trim() : '';
+      const spec = r[colSpecIdx] ? r[colSpecIdx].toString().trim() : '';
+      const power = r[colPowerIdx] ? r[colPowerIdx].toString().trim() : '';
+      const consumable = r[colConsumableIdx] ? r[colConsumableIdx].toString().trim() : '';
+      const boxNo = r[colBoxIdx] ? r[colBoxIdx].toString().trim().replace(/\n/g, ' ') : '';
+      const weight = r[colWeightIdx] ? r[colWeightIdx].toString().trim() : '';
+      const location = r[colLocationIdx] ? r[colLocationIdx].toString().trim() : '';
+
+      // 合併單元格向上填滿邏輯
+      let boxKey = "";
+      if (boxNo) {
+        lastBox = boxNo;
+        boxKey = boxNo;
+      } else {
+        if (lastBox && !location) {
+          boxKey = lastBox;
+        } else {
+          lastBox = "";
+          boxKey = `${currentGroup}無箱號`;
+        }
+      }
+
+      if (!tempBoxes[boxKey]) {
+        tempBoxes[boxKey] = {
+          boxId: boxKey,
+          group: currentGroup,
+          location: location,
+          items: [],
+          categories: new Set()
+        };
+      }
+
+      // 智能地震工作情境分類
+      const itemCat = classifyItem(itemName, currentGroup);
+      tempBoxes[boxKey].categories.add(itemCat);
+
+      tempBoxes[boxKey].items.push({
+        name: itemName,
+        qty: qty,
+        spec: spec,
+        power: power,
+        consumable: consumable,
+        weight: weight,
+        category: itemCat
+      });
+    });
+
+    // 格式化最終數據
+    const newEquipmentData = [];
+    for (const [key, bData] of Object.entries(tempBoxes)) {
+      const categoriesArray = Array.from(bData.categories);
+      
+      let primaryCat = "其他";
+      if (bData.categories.has("監測")) primaryCat = "監測";
+      else if (bData.categories.has("支撐")) primaryCat = "支撐";
+      else if (bData.categories.has("骯髒破壞")) primaryCat = "骯髒破壞";
+      else if (bData.categories.has("乾淨切割")) primaryCat = "乾淨切割";
+
+      if (categoriesArray.length > 1 && bData.categories.has("其他")) {
+        bData.categories.delete("其他");
+      }
+
+      // 還原借用狀態與損壞備註
+      let status = "available";
+      let borrowedBy = "";
+      let borrowedTime = "";
+      let hasDamageOrMissing = false;
+      let damagedItems = [];
+
+      if (oldStatusMap[key]) {
+        status = oldStatusMap[key].status;
+        borrowedBy = oldStatusMap[key].borrowedBy;
+        borrowedTime = oldStatusMap[key].borrowedTime;
+        hasDamageOrMissing = oldStatusMap[key].hasDamageOrMissing || false;
+        damagedItems = oldStatusMap[key].damagedItems || [];
+      }
+
+      newEquipmentData.push({
+        boxId: bData.boxId,
+        group: bData.group,
+        location: bData.location,
+        primaryCategory: primaryCat,
+        categories: Array.from(bData.categories),
+        items: bData.items,
+        status: status,
+        borrowedBy: borrowedBy,
+        borrowedTime: borrowedTime,
+        hasDamageOrMissing: hasDamageOrMissing,
+        damagedItems: damagedItems
+      });
+    }
+
+    // 依據名稱排序
+    newEquipmentData.sort((a, b) => a.boxId.localeCompare(b.boxId, 'zh-hant'));
+
+    // 更新並儲存
+    equipmentData = newEquipmentData;
+    saveToStorage();
+
+    // 更新自訂分類推薦對應
+    const newMappings = { ...customMappings };
+    equipmentData.forEach(box => {
+      box.categories.forEach(cat => {
+        if (newMappings[cat]) {
+          const existsInAnyCat = Object.values(newMappings).some(list => list.includes(box.boxId));
+          if (!existsInAnyCat) {
+            newMappings[cat].push(box.boxId);
+          }
+        }
+      });
+    });
+    customMappings = newMappings;
+    saveMappings();
+
+    updateStats();
+    renderConfigGrid();
+    renderEquipment();
+
+    logDiv.innerHTML += `<span style="color: #10b981; font-weight: 700;">✅ 同步成功！共整理出 ${equipmentData.length} 個裝備箱。</span><br>`;
+    showToast('🔄 雲端裝備同步成功！');
+
+    setTimeout(() => {
+      document.getElementById('settingsModal').classList.remove('active');
+      logDiv.style.display = 'none';
+    }, 1500);
 
   } catch (error) {
     console.error(error);
@@ -573,220 +916,7 @@ async function syncFromGoogleSheets(input) {
   }
 }
 
-// CSV 解析器 (支援引號與換行)
-function parseCSV(text) {
-  let lines = [];
-  let row = [""];
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    let c = text[i];
-    let next = text[i+1];
-    if (c === '"') {
-      if (inQuotes && next === '"') {
-        row[row.length - 1] += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (c === ',' && !inQuotes) {
-      row.push("");
-    } else if ((c === '\r' || c === '\n') && !inQuotes) {
-      if (c === '\r' && next === '\n') { i++; }
-      lines.push(row);
-      row = [""];
-    } else {
-      row[row.length - 1] += c;
-    }
-  }
-  if (row.length > 1 || row[0] !== "") {
-    lines.push(row);
-  }
-  return lines;
-}
-
-// 處理同步完成的 CSV 數據
-function processSyncedCSV(parsedRows, logDiv) {
-  let eqRows = [];
-  let headerFound = false;
-  
-  // 動態尋找表頭與邊界
-  for (let i = 0; i < parsedRows.length; i++) {
-    let r = parsedRows[i];
-    if (!r || r.length < 2) continue;
-    let col0 = r[0] ? r[0].trim() : "";
-    let col1 = r[1] ? r[1].trim() : "";
-    
-    if (!headerFound) {
-      if (col0 === "組別" && col1 === "團體裝備") {
-        headerFound = true;
-      }
-      continue;
-    }
-    
-    // 檢查邊界
-    if (col0 === "序號" || col0.includes("合計") || (col0 === "1" && col1.includes("箱"))) {
-      break;
-    }
-    
-    eqRows.push(r);
-  }
-
-  if (eqRows.length === 0) {
-    logDiv.innerHTML += '<span style="color: #ef4444;">❌ 同步失敗：找不到有效的裝備明細資料列！請確認格式是否符合規格。</span><br>';
-    return;
-  }
-
-  logDiv.innerHTML += `抓取到裝備資料共 ${eqRows.length} 列。<br>`;
-
-  // 暫存原有的借用狀態，避免覆蓋
-  const oldStatusMap = {};
-  equipmentData.forEach(b => {
-    oldStatusMap[b.boxId] = {
-      status: b.status,
-      borrowedBy: b.borrowedBy,
-      borrowedTime: b.borrowedTime
-    };
-  });
-
-  // 解析箱子與裝備
-  const tempBoxes = {};
-  let currentGroup = "未分類";
-  let lastBox = "";
-
-  eqRows.forEach(r => {
-    const groupVal = r[0] ? r[0].trim().replace(/\n/g, '') : '';
-    if (groupVal) {
-      currentGroup = groupVal;
-      lastBox = ""; // Reset on new group
-    }
-
-    const itemName = r[1] ? r[1].trim() : '';
-    if (!itemName) return;
-
-    const qty = r[2] ? r[2].trim() : '';
-    const spec = r[4] ? r[4].trim() : '';
-    const power = r[5] ? r[5].trim() : '';
-    const consumable = r[6] ? r[6].trim() : '';
-    const boxNo = r[7] ? r[7].trim().replace(/\n/g, ' ') : '';
-    const weight = r[9] ? r[9].trim() : '';
-    const location = (r.length > 11 && r[11]) ? r[11].trim() : '';
-
-    let boxKey = "";
-    if (boxNo) {
-      lastBox = boxNo;
-      boxKey = boxNo;
-    } else {
-      if (lastBox && !location) {
-        boxKey = lastBox;
-      } else {
-        lastBox = "";
-        boxKey = `${currentGroup}無箱號`;
-      }
-    }
-
-    if (!tempBoxes[boxKey]) {
-      tempBoxes[boxKey] = {
-        boxId: boxKey,
-        group: currentGroup,
-        location: location,
-        items: [],
-        categories: new Set()
-      };
-    }
-
-    // 智能分類
-    const itemCat = classifyItem(itemName, currentGroup);
-    tempBoxes[boxKey].categories.add(itemCat);
-
-    tempBoxes[boxKey].items.push({
-      name: itemName,
-      qty: qty,
-      spec: spec,
-      power: power,
-      consumable: consumable,
-      weight: weight,
-      category: itemCat
-    });
-  });
-
-  // 組合為最終格式
-  const newEquipmentData = [];
-  for (const [key, bData] of Object.entries(tempBoxes)) {
-    const categoriesArray = Array.from(bData.categories);
-    
-    // 計算主類別
-    let primaryCat = "其他";
-    if (bData.categories.has("監測")) primaryCat = "監測";
-    else if (bData.categories.has("支撐")) primaryCat = "支撐";
-    else if (bData.categories.has("骯髒破壞")) primaryCat = "骯髒破壞";
-    else if (bData.categories.has("乾淨切割")) primaryCat = "乾淨切割";
-
-    if (categoriesArray.length > 1 && bData.categories.has("其他")) {
-      bData.categories.delete("其他");
-    }
-
-    // 還原借用狀態
-    let status = "available";
-    let borrowedBy = "";
-    let borrowedTime = "";
-    if (oldStatusMap[key]) {
-      status = oldStatusMap[key].status;
-      borrowedBy = oldStatusMap[key].borrowedBy;
-      borrowedTime = oldStatusMap[key].borrowedTime;
-    }
-
-    newEquipmentData.push({
-      boxId: bData.boxId,
-      group: bData.group,
-      location: bData.location,
-      primaryCategory: primaryCat,
-      categories: Array.from(bData.categories),
-      items: bData.items,
-      status: status,
-      borrowedBy: borrowedBy,
-      borrowedTime: borrowedTime
-    });
-  }
-
-  // 排序
-  newEquipmentData.sort((a, b) => a.boxId.localeCompare(b.boxId, 'zh-hant'));
-
-  // 更新全域變數與儲存
-  equipmentData = newEquipmentData;
-  saveToStorage();
-  
-  // 更新自訂分類對應（保留新出現的箱子預設，不重寫現有的對應）
-  const newMappings = { ...customMappings };
-  equipmentData.forEach(box => {
-    // 遍歷該箱子的各個分類
-    box.categories.forEach(cat => {
-      if (newMappings[cat]) {
-        // 如果該箱子在所有類別的對應中都完全沒出現過（屬於新箱），則加入預設分類
-        const existsInAnyCat = Object.values(newMappings).some(list => list.includes(box.boxId));
-        if (!existsInAnyCat) {
-          newMappings[cat].push(box.boxId);
-        }
-      }
-    });
-  });
-  customMappings = newMappings;
-  saveMappings();
-
-  updateStats();
-  renderConfigGrid();
-  renderEquipment();
-
-  logDiv.innerHTML += `<span style="color: #10b981; font-weight: 700;">✅ 同步成功！共整理出 ${equipmentData.length} 個裝備箱。</span><br>`;
-  showToast('🔄 雲端裝備同步成功！');
-
-  // 延遲關閉設定 Modal
-  setTimeout(() => {
-    document.getElementById('settingsModal').classList.remove('active');
-    logDiv.style.display = 'none';
-  }, 1500);
-}
-
-// 智能分類邏輯
+// 12. 智能地震分類邏輯
 function classifyItem(name, group) {
   const nameL = name.toLowerCase();
   
@@ -817,19 +947,170 @@ function classifyItem(name, group) {
   return "其他";
 }
 
-// 9. Toast 提示
+// 13. Toast 提示
 function showToast(message) {
   const toast = document.getElementById('toastMessage');
   toast.innerText = message;
   toast.classList.add('show');
-  
   setTimeout(() => {
     toast.classList.remove('show');
-  }, 3000);
+  }, 2500);
 }
 
-// 導出全局函數以供 inline HTML 調用
-window.toggleBoxMapping = toggleBoxMapping;
+// 14. 綁定事件監聽器
+window.addEventListener('DOMContentLoaded', () => {
+  // 載入資料
+  loadFromStorage();
+  loadMappings();
+  renderLogs();
+  
+  // 初始繪製
+  updateStats();
+  renderConfigGrid();
+  renderEquipment();
 
-// 啟動系統
-window.onload = init;
+  // 搜尋欄監聽
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    renderEquipment();
+  });
+
+  // 設定視窗開關
+  document.getElementById('btnOpenSettings').addEventListener('click', () => {
+    const cachedUrl = localStorage.getItem('sheetUrlInput') || '';
+    document.getElementById('sheetUrlInput').value = cachedUrl;
+    document.getElementById('settingsModal').classList.add('active');
+  });
+  
+  document.getElementById('btnCloseSettings').addEventListener('click', () => {
+    document.getElementById('settingsModal').classList.remove('active');
+  });
+
+  // 歷程紀錄視窗開關
+  document.getElementById('btnOpenLogs').addEventListener('click', () => {
+    renderLogs();
+    document.getElementById('logModal').classList.add('active');
+  });
+
+  document.getElementById('btnCloseLogModal').addEventListener('click', () => {
+    document.getElementById('logModal').classList.remove('active');
+  });
+
+  document.getElementById('btnExportLogCsv').addEventListener('click', exportLogsToCSV);
+  document.getElementById('btnClearLog').addEventListener('click', clearLogs);
+
+  // 歸還視窗按鈕
+  document.getElementById('btnConfirmReturn').addEventListener('click', confirmReturn);
+  document.getElementById('btnCancelReturn').addEventListener('click', () => {
+    document.getElementById('returnModal').classList.remove('active');
+    activeReturningBoxId = null;
+  });
+  document.getElementById('btnCloseReturnModal').addEventListener('click', () => {
+    document.getElementById('returnModal').classList.remove('active');
+    activeReturningBoxId = null;
+  });
+
+  // 同步按鈕
+  document.getElementById('btnStartSync').addEventListener('click', () => {
+    const url = document.getElementById('sheetUrlInput').value;
+    localStorage.setItem('sheetUrlInput', url);
+    syncFromGoogleSheets(url);
+  });
+
+  // 重置按鈕
+  document.getElementById('btnResetLocalData').addEventListener('click', () => {
+    if (confirm("⚠️ 確定要將裝備重置為預設資料嗎？這將會清除您目前所有的借還狀態與雲端同步資料。")) {
+      localStorage.removeItem('earthquake_equipment_data');
+      localStorage.removeItem('earthquake_custom_mappings');
+      localStorage.removeItem('earthquake_transaction_logs');
+      
+      // 重新載入
+      loadFromStorage();
+      loadMappings();
+      transactionLogs = [];
+      renderLogs();
+      updateStats();
+      renderConfigGrid();
+      renderEquipment();
+      showToast("⚠️ 已重置為初始預設資料庫！");
+      document.getElementById('settingsModal').classList.remove('active');
+    }
+  });
+
+  // 詳情 Modal 關閉
+  document.getElementById('btnCloseDetail').addEventListener('click', () => {
+    document.getElementById('detailModal').classList.remove('active');
+  });
+
+  // 團隊 Modal 關閉
+  document.getElementById('btnCloseTeamModal').addEventListener('click', () => {
+    document.getElementById('teamModal').classList.remove('active');
+  });
+
+  // 點選卡片開啟小組明細
+  document.getElementById('statCardTa').addEventListener('click', () => openTeamModal('A組'));
+  document.getElementById('statCardTb').addEventListener('click', () => openTeamModal('B組'));
+
+  // 任務篩選按鈕 (電腦版)
+  const filterBtns = document.querySelectorAll('.btn-filter[data-category]');
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.category;
+      
+      if (btn.classList.contains('active')) {
+        // 取消選取
+        btn.classList.remove('active');
+        activeFilterCategory = "";
+        document.getElementById('mobileFilterSelect').value = "";
+      } else {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilterCategory = cat;
+        document.getElementById('mobileFilterSelect').value = cat;
+      }
+      renderEquipment();
+    });
+  });
+
+  document.getElementById('btnResetFilters').addEventListener('click', () => {
+    filterBtns.forEach(b => b.classList.remove('active'));
+    activeFilterCategory = "";
+    document.getElementById('mobileFilterSelect').value = "";
+    renderEquipment();
+  });
+
+  // 手機版篩選下拉選單連動
+  document.getElementById('mobileFilterSelect').addEventListener('change', (e) => {
+    const cat = e.target.value;
+    activeFilterCategory = cat;
+    
+    // 連動同步更新電腦版按鈕樣式
+    filterBtns.forEach(b => {
+      if (b.dataset.category === cat) {
+        b.classList.add('active');
+      } else {
+        b.classList.remove('active');
+      }
+    });
+    renderEquipment();
+  });
+
+  // 設定設定面版內的自訂分頁切換
+  const configTabs = [
+    document.getElementById('configTab_監測'),
+    document.getElementById('configTab_骯髒破壞'),
+    document.getElementById('configTab_乾淨切割'),
+    document.getElementById('configTab_支撐')
+  ];
+
+  configTabs.forEach(tab => {
+    if (tab) {
+      tab.addEventListener('click', () => {
+        configTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        activeConfigCat = tab.id.replace('configTab_', '');
+        renderConfigGrid();
+      });
+    }
+  });
+});
