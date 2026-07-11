@@ -179,6 +179,11 @@ header {
   gap: 10px;
 }
 
+/* 預設在電腦版隱藏下拉選單 */
+.mobile-filter-select {
+  display: none;
+}
+
 /* 裝備卡片看板區 */
 .equipment-grid {
   display: grid;
@@ -831,6 +836,7 @@ header {
   
   /* 行動版工作下拉選單容器 */
   .mobile-filter-select {
+    display: block !important;
     width: 100%;
     padding: 12px;
     background: rgba(15, 23, 42, 0.6);
