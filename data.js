@@ -1,311 +1,6 @@
 // 初始裝備資料 (當 localStorage 無資料時使用)
 window.initialEquipmentData = [
   {
-    "boxId": "後勤2",
-    "group": "後勤組",
-    "location": "第2櫃",
-    "primaryCategory": "其他",
-    "categories": [
-      "其他"
-    ],
-    "items": [
-      {
-        "name": "犀牛雙人帳",
-        "qty": "20.0",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "78.0",
-        "category": "其他"
-      },
-      {
-        "name": "防潮地墊",
-        "qty": "20.0",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "78.0",
-        "category": "其他"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
-    "boxId": "後勤3",
-    "group": "後勤組",
-    "location": "第2櫃",
-    "primaryCategory": "其他",
-    "categories": [
-      "其他"
-    ],
-    "items": [
-      {
-        "name": "ELEMAX發電機(綠色)",
-        "qty": "2.0",
-        "spec": "",
-        "power": "95汽油",
-        "consumable": "四行程機油",
-        "weight": "75.0",
-        "category": "其他"
-      },
-      {
-        "name": "摺疊椅",
-        "qty": "10.0",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "75.0",
-        "category": "其他"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
-    "boxId": "後勤4",
-    "group": "後勤組",
-    "location": "第2櫃",
-    "primaryCategory": "其他",
-    "categories": [
-      "其他"
-    ],
-    "items": [
-      {
-        "name": "折疊式桌椅",
-        "qty": "3(2國外)",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "57.0",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee廣角照明燈",
-        "qty": "4.0",
-        "spec": "",
-        "power": "米沃奇\n 18V電池",
-        "consumable": "",
-        "weight": "57.0",
-        "category": "其他"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
-    "boxId": "後勤5",
-    "group": "後勤組",
-    "location": "第2櫃",
-    "primaryCategory": "乾淨切割",
-    "categories": [
-      "乾淨切割"
-    ],
-    "items": [
-      {
-        "name": "折疊式桌椅",
-        "qty": "2(2國外)",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "66.0",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee工作燈",
-        "qty": "5組",
-        "spec": "",
-        "power": "米沃奇\n 18V電池",
-        "consumable": "",
-        "weight": "66.0",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee線鋸機",
-        "qty": "1支",
-        "spec": "",
-        "power": "米沃奇\n 18V電池",
-        "consumable": "",
-        "weight": "66.0",
-        "category": "乾淨切割"
-      },
-      {
-        "name": "Milwaukee充電器",
-        "qty": "2組",
-        "spec": "",
-        "power": "米沃奇\n 18V電池",
-        "consumable": "",
-        "weight": "66.0",
-        "category": "其他"
-      },
-      {
-        "name": "延長線",
-        "qty": "2(2國外)",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "66.0",
-        "category": "其他"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
-    "boxId": "後勤6",
-    "group": "後勤組",
-    "location": "第2櫃",
-    "primaryCategory": "骯髒破壞",
-    "categories": [
-      "骯髒破壞"
-    ],
-    "items": [
-      {
-        "name": "維修工具箱(含耗材)",
-        "qty": "1組",
-        "spec": "",
-        "power": "米沃奇\n 18V電池",
-        "consumable": "WD40及化清不可上機",
-        "weight": "",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee衝擊起子機",
-        "qty": "1支",
-        "spec": "",
-        "power": "米沃奇\n 18V電池",
-        "consumable": "WD40及化清不可上機",
-        "weight": "",
-        "category": "骯髒破壞"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
-    "boxId": "後勤7",
-    "group": "後勤組",
-    "location": "第2櫃",
-    "primaryCategory": "骯髒破壞",
-    "categories": [
-      "骯髒破壞"
-    ],
-    "items": [
-      {
-        "name": "維修工具箱(含耗材)",
-        "qty": "1組",
-        "spec": "",
-        "power": "米沃奇\n 18V電池",
-        "consumable": "WD40及化清不可上機",
-        "weight": "",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee衝擊起子機",
-        "qty": "1支",
-        "spec": "",
-        "power": "米沃奇\n 18V電池",
-        "consumable": "WD40及化清不可上機",
-        "weight": "",
-        "category": "骯髒破壞"
-      },
-      {
-        "name": "指揮帳(含2充氣幫補)",
-        "qty": "1(1國外)",
-        "spec": "",
-        "power": "110V交流電",
-        "consumable": "",
-        "weight": "100.0",
-        "category": "其他"
-      },
-      {
-        "name": "手推車",
-        "qty": "3(3國外)",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "111.0",
-        "category": "其他"
-      },
-      {
-        "name": "環場式照明燈",
-        "qty": "1組",
-        "spec": "",
-        "power": "95汽油",
-        "consumable": "四行程機油",
-        "weight": "60.0",
-        "category": "其他"
-      },
-      {
-        "name": "空油桶",
-        "qty": "2桶",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "",
-        "category": "其他"
-      },
-      {
-        "name": "油卡(桶裝、出勤車輛)",
-        "qty": "1式",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "",
-        "category": "其他"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
-    "boxId": "搜索1",
-    "group": "搜索組",
-    "location": "精密室",
-    "primaryCategory": "監測",
-    "categories": [
-      "監測"
-    ],
-    "items": [
-      {
-        "name": "光纖影音生命探測器\n(Searchcam3000)",
-        "qty": "1.0",
-        "spec": "SN:SC-3669",
-        "power": "7.2V鋰電池3.35Ah*27.4V鋰電池2.3Ah*2",
-        "consumable": "",
-        "weight": "18.0",
-        "category": "監測"
-      },
-      {
-        "name": "聲納生命探測器(leader-search)簡版",
-        "qty": "1組",
-        "spec": "D11-01-19-A/0127/30",
-        "power": "平板:14.8V鋰電池2.5Ah*2\n探測器:4號電池*9",
-        "consumable": "",
-        "weight": "18.0",
-        "category": "監測"
-      },
-      {
-        "name": "雷達生命探測器\n(RESCUE RADAR)",
-        "qty": "1.0",
-        "spec": "SN:1W1670001582",
-        "power": "探測主機12V電池9Ah*3\n平板11.1V鋰電池5.2Ah*2",
-        "consumable": "須同意後上機",
-        "weight": "37.0",
-        "category": "監測"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
     "boxId": "救援1",
     "group": "救援組",
     "location": "第2櫃",
@@ -348,151 +43,6 @@ window.initialEquipmentData = [
         "power": "110V交流電",
         "consumable": "",
         "weight": "103.0",
-        "category": "其他"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
-    "boxId": "救援10",
-    "group": "救援組",
-    "location": "第2櫃",
-    "primaryCategory": "骯髒破壞",
-    "categories": [
-      "骯髒破壞"
-    ],
-    "items": [
-      {
-        "name": "鏈鋸及圓盤切割器水冷泵",
-        "qty": "5組",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "13.0",
-        "category": "骯髒破壞"
-      }
-    ],
-    "status": "available",
-    "borrowedBy": "",
-    "borrowedTime": ""
-  },
-  {
-    "boxId": "救援11",
-    "group": "救援組",
-    "location": "第2櫃",
-    "primaryCategory": "支撐",
-    "categories": [
-      "支撐"
-    ],
-    "items": [
-      {
-        "name": "HILTI 5Ah.21V電池",
-        "qty": "4顆",
-        "spec": "",
-        "power": "",
-        "consumable": "須同意後上機",
-        "weight": "51.0",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee 12Ah.18V電池",
-        "qty": "11顆",
-        "spec": "",
-        "power": "",
-        "consumable": "不可上機",
-        "weight": "51.0",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee 8Ah.18V電池",
-        "qty": "3顆",
-        "spec": "",
-        "power": "",
-        "consumable": "須同意後上機",
-        "weight": "51.0",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee 5Ah.18V電池",
-        "qty": "4顆(4國外)",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "51.0",
-        "category": "其他"
-      },
-      {
-        "name": "Milwaukee 6Ah.18V電池",
-        "qty": "4顆(4國外)",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "51.0",
-        "category": "其他"
-      },
-      {
-        "name": "Homatro 6A.28V電池",
-        "qty": "3顆",
-        "spec": "",
-        "power": "",
-        "consumable": "須同意後上機",
-        "weight": "51.0",
-        "category": "其他"
-      },
-      {
-        "name": "Makita 3A.18V電池",
-        "qty": "1顆",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "51.0",
-        "category": "其他"
-      },
-      {
-        "name": "HILTI 充電器",
-        "qty": "1台",
-        "spec": "",
-        "power": "110V交流電",
-        "consumable": "",
-        "weight": "51.0",
-        "category": "其他"
-      },
-      {
-        "name": "hilife手搖式千斤頂",
-        "qty": "4組",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "68.0",
-        "category": "支撐"
-      },
-      {
-        "name": "hilife配件組",
-        "qty": "1籃",
-        "spec": "",
-        "power": "",
-        "consumable": "",
-        "weight": "40.0",
-        "category": "其他"
-      },
-      {
-        "name": "大型紅色發電機(6500w)",
-        "qty": "1台(1國外)",
-        "spec": "",
-        "power": "95汽油",
-        "consumable": "四行程機油",
-        "weight": "90.0",
-        "category": "其他"
-      },
-      {
-        "name": "中型紅色發電機(3000w)",
-        "qty": "1組",
-        "spec": "",
-        "power": "95汽油",
-        "consumable": "四行程機油",
-        "weight": "45.0",
         "category": "其他"
       }
     ],
@@ -566,8 +116,8 @@ window.initialEquipmentData = [
     "location": "第2櫃",
     "primaryCategory": "骯髒破壞",
     "categories": [
-      "骯髒破壞",
-      "乾淨切割"
+      "乾淨切割",
+      "骯髒破壞"
     ],
     "items": [
       {
@@ -1667,6 +1217,192 @@ window.initialEquipmentData = [
     "borrowedTime": ""
   },
   {
+    "boxId": "救援10",
+    "group": "救援組",
+    "location": "第2櫃",
+    "primaryCategory": "骯髒破壞",
+    "categories": [
+      "骯髒破壞"
+    ],
+    "items": [
+      {
+        "name": "鏈鋸及圓盤切割器水冷泵",
+        "qty": "5組",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "13.0",
+        "category": "骯髒破壞"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
+    "boxId": "救援11",
+    "group": "救援組",
+    "location": "第2櫃",
+    "primaryCategory": "支撐",
+    "categories": [
+      "支撐"
+    ],
+    "items": [
+      {
+        "name": "HILTI 5Ah.21V電池",
+        "qty": "4顆",
+        "spec": "",
+        "power": "",
+        "consumable": "須同意後上機",
+        "weight": "51.0",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee 12Ah.18V電池",
+        "qty": "11顆",
+        "spec": "",
+        "power": "",
+        "consumable": "不可上機",
+        "weight": "51.0",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee 8Ah.18V電池",
+        "qty": "3顆",
+        "spec": "",
+        "power": "",
+        "consumable": "須同意後上機",
+        "weight": "51.0",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee 5Ah.18V電池",
+        "qty": "4顆(4國外)",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "51.0",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee 6Ah.18V電池",
+        "qty": "4顆(4國外)",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "51.0",
+        "category": "其他"
+      },
+      {
+        "name": "Homatro 6A.28V電池",
+        "qty": "3顆",
+        "spec": "",
+        "power": "",
+        "consumable": "須同意後上機",
+        "weight": "51.0",
+        "category": "其他"
+      },
+      {
+        "name": "Makita 3A.18V電池",
+        "qty": "1顆",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "51.0",
+        "category": "其他"
+      },
+      {
+        "name": "HILTI 充電器",
+        "qty": "1台",
+        "spec": "",
+        "power": "110V交流電",
+        "consumable": "",
+        "weight": "51.0",
+        "category": "其他"
+      },
+      {
+        "name": "hilife手搖式千斤頂",
+        "qty": "4組",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "68.0",
+        "category": "支撐"
+      },
+      {
+        "name": "hilife配件組",
+        "qty": "1籃",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "40.0",
+        "category": "其他"
+      },
+      {
+        "name": "大型紅色發電機(6500w)",
+        "qty": "1台(1國外)",
+        "spec": "",
+        "power": "95汽油",
+        "consumable": "四行程機油",
+        "weight": "90.0",
+        "category": "其他"
+      },
+      {
+        "name": "中型紅色發電機(3000w)",
+        "qty": "1組",
+        "spec": "",
+        "power": "95汽油",
+        "consumable": "四行程機油",
+        "weight": "45.0",
+        "category": "其他"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
+    "boxId": "搜索1",
+    "group": "搜索組",
+    "location": "精密室",
+    "primaryCategory": "監測",
+    "categories": [
+      "監測"
+    ],
+    "items": [
+      {
+        "name": "光纖影音生命探測器\n(Searchcam3000)",
+        "qty": "1.0",
+        "spec": "SN:SC-3669",
+        "power": "7.2V鋰電池3.35Ah*27.4V鋰電池2.3Ah*2",
+        "consumable": "",
+        "weight": "18.0",
+        "category": "監測"
+      },
+      {
+        "name": "聲納生命探測器(leader-search)簡版",
+        "qty": "1組",
+        "spec": "D11-01-19-A/0127/30",
+        "power": "平板:14.8V鋰電池2.5Ah*2\n探測器:4號電池*9",
+        "consumable": "",
+        "weight": "18.0",
+        "category": "監測"
+      },
+      {
+        "name": "雷達生命探測器\n(RESCUE RADAR)",
+        "qty": "1.0",
+        "spec": "SN:1W1670001582",
+        "power": "探測主機12V電池9Ah*3\n平板11.1V鋰電池5.2Ah*2",
+        "consumable": "須同意後上機",
+        "weight": "37.0",
+        "category": "監測"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
     "boxId": "管理1",
     "group": "管理組",
     "location": "第2櫃",
@@ -1756,6 +1492,270 @@ window.initialEquipmentData = [
         "consumable": "",
         "weight": "40.0",
         "category": "監測"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
+    "boxId": "後勤2",
+    "group": "後勤組",
+    "location": "第2櫃",
+    "primaryCategory": "其他",
+    "categories": [
+      "其他"
+    ],
+    "items": [
+      {
+        "name": "犀牛雙人帳",
+        "qty": "20.0",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "78.0",
+        "category": "其他"
+      },
+      {
+        "name": "防潮地墊",
+        "qty": "20.0",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "78.0",
+        "category": "其他"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
+    "boxId": "後勤3",
+    "group": "後勤組",
+    "location": "第2櫃",
+    "primaryCategory": "其他",
+    "categories": [
+      "其他"
+    ],
+    "items": [
+      {
+        "name": "ELEMAX發電機(綠色)",
+        "qty": "2.0",
+        "spec": "",
+        "power": "95汽油",
+        "consumable": "四行程機油",
+        "weight": "75.0",
+        "category": "其他"
+      },
+      {
+        "name": "摺疊椅",
+        "qty": "10.0",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "75.0",
+        "category": "其他"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
+    "boxId": "後勤4",
+    "group": "後勤組",
+    "location": "第2櫃",
+    "primaryCategory": "其他",
+    "categories": [
+      "其他"
+    ],
+    "items": [
+      {
+        "name": "折疊式桌椅",
+        "qty": "3(2國外)",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "57.0",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee廣角照明燈",
+        "qty": "4.0",
+        "spec": "",
+        "power": "米沃奇\n 18V電池",
+        "consumable": "",
+        "weight": "57.0",
+        "category": "其他"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
+    "boxId": "後勤5",
+    "group": "後勤組",
+    "location": "第2櫃",
+    "primaryCategory": "乾淨切割",
+    "categories": [
+      "乾淨切割"
+    ],
+    "items": [
+      {
+        "name": "折疊式桌椅",
+        "qty": "2(2國外)",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "66.0",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee工作燈",
+        "qty": "5組",
+        "spec": "",
+        "power": "米沃奇\n 18V電池",
+        "consumable": "",
+        "weight": "66.0",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee線鋸機",
+        "qty": "1支",
+        "spec": "",
+        "power": "米沃奇\n 18V電池",
+        "consumable": "",
+        "weight": "66.0",
+        "category": "乾淨切割"
+      },
+      {
+        "name": "Milwaukee充電器",
+        "qty": "2組",
+        "spec": "",
+        "power": "米沃奇\n 18V電池",
+        "consumable": "",
+        "weight": "66.0",
+        "category": "其他"
+      },
+      {
+        "name": "延長線",
+        "qty": "2(2國外)",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "66.0",
+        "category": "其他"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
+    "boxId": "後勤6",
+    "group": "後勤組",
+    "location": "第2櫃",
+    "primaryCategory": "骯髒破壞",
+    "categories": [
+      "骯髒破壞"
+    ],
+    "items": [
+      {
+        "name": "維修工具箱(含耗材)",
+        "qty": "1組",
+        "spec": "",
+        "power": "米沃奇\n 18V電池",
+        "consumable": "WD40及化清不可上機",
+        "weight": "",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee衝擊起子機",
+        "qty": "1支",
+        "spec": "",
+        "power": "米沃奇\n 18V電池",
+        "consumable": "WD40及化清不可上機",
+        "weight": "",
+        "category": "骯髒破壞"
+      }
+    ],
+    "status": "available",
+    "borrowedBy": "",
+    "borrowedTime": ""
+  },
+  {
+    "boxId": "後勤7",
+    "group": "後勤組",
+    "location": "第2櫃",
+    "primaryCategory": "骯髒破壞",
+    "categories": [
+      "骯髒破壞"
+    ],
+    "items": [
+      {
+        "name": "維修工具箱(含耗材)",
+        "qty": "1組",
+        "spec": "",
+        "power": "米沃奇\n 18V電池",
+        "consumable": "WD40及化清不可上機",
+        "weight": "",
+        "category": "其他"
+      },
+      {
+        "name": "Milwaukee衝擊起子機",
+        "qty": "1支",
+        "spec": "",
+        "power": "米沃奇\n 18V電池",
+        "consumable": "WD40及化清不可上機",
+        "weight": "",
+        "category": "骯髒破壞"
+      },
+      {
+        "name": "指揮帳(含2充氣幫補)",
+        "qty": "1(1國外)",
+        "spec": "",
+        "power": "110V交流電",
+        "consumable": "",
+        "weight": "100.0",
+        "category": "其他"
+      },
+      {
+        "name": "手推車",
+        "qty": "3(3國外)",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "111.0",
+        "category": "其他"
+      },
+      {
+        "name": "環場式照明燈",
+        "qty": "1組",
+        "spec": "",
+        "power": "95汽油",
+        "consumable": "四行程機油",
+        "weight": "60.0",
+        "category": "其他"
+      },
+      {
+        "name": "空油桶",
+        "qty": "2桶",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "",
+        "category": "其他"
+      },
+      {
+        "name": "油卡(桶裝、出勤車輛)",
+        "qty": "1式",
+        "spec": "",
+        "power": "",
+        "consumable": "",
+        "weight": "",
+        "category": "其他"
       }
     ],
     "status": "available",

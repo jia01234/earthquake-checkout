@@ -871,8 +871,25 @@ function importParsedRows(allEqRows, logDiv) {
     });
   }
 
-  // 依據名稱排序
-  newEquipmentData.sort((a, b) => a.boxId.localeCompare(b.boxId, 'zh-hant'));
+  // 💡 依據使用者指示：優先將「救援組」排在最前面，其餘依序為搜索組、管理組、醫療組、後勤組、備用器材
+  const groupPriority = {
+    "救援組": 1,
+    "搜索組": 2,
+    "管理組": 3,
+    "醫療組": 4,
+    "後勤組": 5,
+    "備用器材": 6
+  };
+
+  newEquipmentData.sort((a, b) => {
+    const pA = groupPriority[a.group] || 99;
+    const pB = groupPriority[b.group] || 99;
+    if (pA !== pB) {
+      return pA - pB;
+    }
+    // 同組別內，使用自然數字排序 (例如 救援2 會排在 救援10 前面)
+    return a.boxId.localeCompare(b.boxId, 'zh-hant', { numeric: true, sensitivity: 'base' });
+  });
 
   // 更新並儲存
   equipmentData = newEquipmentData;
