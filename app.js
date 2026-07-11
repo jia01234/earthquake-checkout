@@ -700,15 +700,15 @@ function parseSheetRows(parsedRows, sheetName, allEqRows, logDiv) {
   }
 
   // 動態匹配關鍵字對應的索引值
-  let colGroupIdx = headerRow.findIndex(c => c.includes("組別"));
-  let colNameIdx = headerRow.findIndex(c => c.includes("團體裝備") || c.includes("品名") || c.includes("品項"));
-  let colQtyIdx = headerRow.findIndex(c => c.includes("數量"));
+  let colGroupIdx = headerRow.findIndex(c => c && c.includes("組別"));
+  let colNameIdx = headerRow.findIndex(c => c && (c.includes("團體裝備") || c.includes("品名") || c.includes("品項")));
+  let colQtyIdx = headerRow.findIndex(c => c && c.includes("數量"));
   let colBoxIdx = 1; // 💡 強制使用 B 欄 (index 1) 作為唯一箱號對應欄位
-  let colSpecIdx = headerRow.findIndex(c => c.includes("規格") || c.includes("序號"));
-  let colPowerIdx = headerRow.findIndex(c => c.includes("動力"));
-  let colConsumableIdx = headerRow.findIndex(c => c.includes("耗材"));
-  let colWeightIdx = headerRow.findIndex(c => c.includes("重量"));
-  let colLocationIdx = headerRow.findIndex(c => c.includes("位置") || c.includes("存放"));
+  let colSpecIdx = headerRow.findIndex(c => c && (c.includes("規格") || c.includes("序號")));
+  let colPowerIdx = headerRow.findIndex(c => c && c.includes("動力"));
+  let colConsumableIdx = headerRow.findIndex(c => c && c.includes("耗材"));
+  let colWeightIdx = headerRow.findIndex(c => c && c.includes("重量"));
+  let colLocationIdx = headerRow.findIndex(c => c && (c.includes("位置") || c.includes("存放")));
 
   // 容錯機制 (當某些選填欄位未配對到時，使用預設舊版欄位順序)
   if (colGroupIdx === -1) colGroupIdx = 0;
