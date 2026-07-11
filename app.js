@@ -1084,6 +1084,16 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settingsModal').classList.remove('active');
   });
 
+  // 自訂推薦視窗開關
+  document.getElementById('btnOpenConfig').addEventListener('click', () => {
+    document.getElementById('configModal').classList.add('active');
+    renderConfigGrid();
+  });
+
+  document.getElementById('btnCloseConfig').addEventListener('click', () => {
+    document.getElementById('configModal').classList.remove('active');
+  });
+
   // 歷程紀錄視窗開關
   document.getElementById('btnOpenLogs').addEventListener('click', () => {
     renderLogs();
