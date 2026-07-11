@@ -925,6 +925,7 @@ function importParsedRows(allEqRows, logDiv) {
     document.getElementById('settingsModal').classList.remove('active');
     logDiv.style.display = 'none';
   }, 1800);
+}
 
 // 處理本機載入 Excel 工作簿
 function processWorkbook(workbook, logDiv) {
