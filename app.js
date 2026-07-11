@@ -703,7 +703,7 @@ function parseSheetRows(parsedRows, sheetName, allEqRows, logDiv) {
   let colGroupIdx = headerRow.findIndex(c => c.includes("組別"));
   let colNameIdx = headerRow.findIndex(c => c.includes("團體裝備") || c.includes("品名") || c.includes("品項"));
   let colQtyIdx = headerRow.findIndex(c => c.includes("數量"));
-  let colBoxIdx = headerRow.findIndex(c => c.includes("箱號") || c.includes("箱子"));
+  let colBoxIdx = 1; // 💡 強制使用 B 欄 (index 1) 作為唯一箱號對應欄位
   let colSpecIdx = headerRow.findIndex(c => c.includes("規格") || c.includes("序號"));
   let colPowerIdx = headerRow.findIndex(c => c.includes("動力"));
   let colConsumableIdx = headerRow.findIndex(c => c.includes("耗材"));
@@ -714,27 +714,6 @@ function parseSheetRows(parsedRows, sheetName, allEqRows, logDiv) {
   if (colGroupIdx === -1) colGroupIdx = 0;
   if (colNameIdx === -1) colNameIdx = 1;
   if (colQtyIdx === -1) colQtyIdx = 2;
-  
-  // 💡 優先且主動檢測 Column B (index 1) 是否是手動填滿的箱號欄
-  let colBHasVals = false;
-  let sampleCount = 0;
-  for (let i = headerRowIndex + 1; i < Math.min(parsedRows.length, headerRowIndex + 15); i++) {
-    if (parsedRows[i] && parsedRows[i][1]) {
-      const valB = parsedRows[i][1].toString().trim();
-      // 排除當 Column B 的內容與品名欄相同的情況，確保它是獨立的箱號
-      if (valB && valB !== (parsedRows[i][colNameIdx] ? parsedRows[i][colNameIdx].toString().trim() : "")) {
-        colBHasVals = true;
-        sampleCount++;
-      }
-    }
-  }
-  
-  // 如果 Column B 填滿了箱號資料，我們直接將其設置為箱號欄！
-  if (colBHasVals && sampleCount > 2) {
-    colBoxIdx = 1;
-  }
-
-  if (colBoxIdx === -1) colBoxIdx = 7; // 預設使用 Column H (index 7)
   if (colSpecIdx === -1) colSpecIdx = 4;
   if (colPowerIdx === -1) colPowerIdx = 5;
   if (colConsumableIdx === -1) colConsumableIdx = 6;
