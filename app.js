@@ -714,14 +714,34 @@ function parseSheetRows(parsedRows, sheetName, allEqRows, logDiv) {
   if (colGroupIdx === -1) colGroupIdx = 0;
   if (colNameIdx === -1) colNameIdx = 1;
   if (colQtyIdx === -1) colQtyIdx = 2;
-  if (colBoxIdx === -1) colBoxIdx = 7;
+  
+  // 💡 智慧匹配 Column B (index 1)：如果沒有配對到 colBoxIdx，或者配對到 7 (預設)，
+  // 但 Column B 在接下來的資料行中具有高頻率的值，我們自動將其設置為箱號欄！
+  if (colBoxIdx === -1 || colBoxIdx === 7) {
+    let hasValInColB = false;
+    let sampleCount = 0;
+    for (let i = headerRowIndex + 1; i < Math.min(parsedRows.length, headerRowIndex + 15); i++) {
+      if (parsedRows[i] && parsedRows[i][1]) {
+        const valB = parsedRows[i][1].toString().trim();
+        // 排除當 colB 剛好與品名欄相同的情況
+        if (valB && valB !== (parsedRows[i][colNameIdx] ? parsedRows[i][colNameIdx].toString().trim() : "")) {
+          hasValInColB = true;
+          sampleCount++;
+        }
+      }
+    }
+    if (hasValInColB && sampleCount > 2) {
+      colBoxIdx = 1;
+    } else {
+      if (colBoxIdx === -1) colBoxIdx = 7; // 預設第 8 欄
+    }
+  }
+
   if (colSpecIdx === -1) colSpecIdx = 4;
   if (colPowerIdx === -1) colPowerIdx = 5;
   if (colConsumableIdx === -1) colConsumableIdx = 6;
   if (colWeightIdx === -1) colWeightIdx = 9;
   if (colLocationIdx === -1) colLocationIdx = 11;
-
-  // 擷取裝備列 (直到遇到 "序號", "合計" 或 "1"加"箱" 斷點為止)
   let sheetCount = 0;
   for (let i = headerRowIndex + 1; i < parsedRows.length; i++) {
     const r = parsedRows[i];
@@ -901,7 +921,6 @@ function importParsedRows(allEqRows, logDiv) {
     document.getElementById('settingsModal').classList.remove('active');
     logDiv.style.display = 'none';
   }, 1800);
-}
 
 // 處理本機載入 Excel 工作簿
 function processWorkbook(workbook, logDiv) {
@@ -910,6 +929,24 @@ function processWorkbook(workbook, logDiv) {
   
   workbook.SheetNames.forEach(sheetName => {
     const worksheet = workbook.Sheets[sheetName];
+    
+    // 💡 預先填滿 Excel 中所有垂直/水平合併的儲存格
+    if (worksheet['!merges']) {
+      worksheet['!merges'].forEach(merge => {
+        const startRef = XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c });
+        const val = worksheet[startRef];
+        if (val !== undefined) {
+          for (let r = merge.s.r; r <= merge.e.r; r++) {
+            for (let c = merge.s.c; c <= merge.e.c; c++) {
+              if (r === merge.s.r && c === merge.s.c) continue;
+              const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
+              worksheet[cellRef] = { ...val };
+            }
+          }
+        }
+      });
+    }
+
     const parsedRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
     parseSheetRows(parsedRows, sheetName, allEqRows, logDiv);
   });
