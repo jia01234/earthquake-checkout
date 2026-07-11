@@ -715,28 +715,26 @@ function parseSheetRows(parsedRows, sheetName, allEqRows, logDiv) {
   if (colNameIdx === -1) colNameIdx = 1;
   if (colQtyIdx === -1) colQtyIdx = 2;
   
-  // 💡 智慧匹配 Column B (index 1)：如果沒有配對到 colBoxIdx，或者配對到 7 (預設)，
-  // 但 Column B 在接下來的資料行中具有高頻率的值，我們自動將其設置為箱號欄！
-  if (colBoxIdx === -1 || colBoxIdx === 7) {
-    let hasValInColB = false;
-    let sampleCount = 0;
-    for (let i = headerRowIndex + 1; i < Math.min(parsedRows.length, headerRowIndex + 15); i++) {
-      if (parsedRows[i] && parsedRows[i][1]) {
-        const valB = parsedRows[i][1].toString().trim();
-        // 排除當 colB 剛好與品名欄相同的情況
-        if (valB && valB !== (parsedRows[i][colNameIdx] ? parsedRows[i][colNameIdx].toString().trim() : "")) {
-          hasValInColB = true;
-          sampleCount++;
-        }
+  // 💡 優先且主動檢測 Column B (index 1) 是否是手動填滿的箱號欄
+  let colBHasVals = false;
+  let sampleCount = 0;
+  for (let i = headerRowIndex + 1; i < Math.min(parsedRows.length, headerRowIndex + 15); i++) {
+    if (parsedRows[i] && parsedRows[i][1]) {
+      const valB = parsedRows[i][1].toString().trim();
+      // 排除當 Column B 的內容與品名欄相同的情況，確保它是獨立的箱號
+      if (valB && valB !== (parsedRows[i][colNameIdx] ? parsedRows[i][colNameIdx].toString().trim() : "")) {
+        colBHasVals = true;
+        sampleCount++;
       }
     }
-    if (hasValInColB && sampleCount > 2) {
-      colBoxIdx = 1;
-    } else {
-      if (colBoxIdx === -1) colBoxIdx = 7; // 預設第 8 欄
-    }
+  }
+  
+  // 如果 Column B 填滿了箱號資料，我們直接將其設置為箱號欄！
+  if (colBHasVals && sampleCount > 2) {
+    colBoxIdx = 1;
   }
 
+  if (colBoxIdx === -1) colBoxIdx = 7; // 預設使用 Column H (index 7)
   if (colSpecIdx === -1) colSpecIdx = 4;
   if (colPowerIdx === -1) colPowerIdx = 5;
   if (colConsumableIdx === -1) colConsumableIdx = 6;
@@ -804,13 +802,19 @@ function importParsedRows(allEqRows, logDiv) {
     const weight = r[colWeightIdx] ? r[colWeightIdx].toString().trim() : '';
     const location = r[colLocationIdx] ? r[colLocationIdx].toString().trim() : '';
 
-    // 合併單元格向上填滿與位置敏感判定邏輯
+    // 合併單元格向上填滿與位置敏感判定邏輯（結合體積與重量欄位防誤觸）
     let boxKey = "";
     if (boxNo) {
       lastBox = boxNo;
       boxKey = boxNo;
     } else {
-      if (lastBox && !location) {
+      let colVolIdx = colWeightIdx - 1;
+      if (colVolIdx < 0) colVolIdx = 9;
+      const volume = r[colVolIdx] ? r[colVolIdx].toString().trim() : '';
+
+      // 💡 智慧判定：如果該列有 location 且體積/重量不為空，說明是獨立的未箱裝裝備，應終止 carry-forward。
+      // 反之，如果 location 雖然有填，但體積與重量都是空白，說明它是合併範圍內的子品項，維持 carry-forward。
+      if (lastBox && (!location || (volume === "" && weight === ""))) {
         boxKey = lastBox;
       } else {
         lastBox = "";
